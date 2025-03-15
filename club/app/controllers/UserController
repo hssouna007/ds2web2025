@@ -1,0 +1,125 @@
+<?php
+// app/controllers/UserController.php
+require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Application.php'; // Add Application model
+require_once __DIR__ . '/../../config/config.php';
+
+class UserController {
+    private $userModel;
+    private $applicationModel;
+
+    public function __construct() {
+        $this->userModel = new User();
+        $this->applicationModel = new Application(); // Initialize Application model
+    }
+
+    // Show the admin dashboard
+    public function showAdminDashboard() {
+        // Check if the user is authenticated and is an admin
+        if (!$this->isAdmin()) {
+            header('Location: ' . BASE_URL . 'index.php?action=login');
+            exit;
+        }
+
+        // Fetch all users for the admin dashboard
+        $users = $this->userModel->getAllUsers();
+        
+        // Fetch pending applications
+        $applications = $this->applicationModel->getPendingApplications();
+        
+        // Fetch accepted members
+        $acceptedMembers = $this->applicationModel->getAcceptedMembers();
+
+        // Load the updated admin_dashboard.php
+        require_once __DIR__ . '/../views/admin_dashboard.php';
+    }
+
+    // Approve an application
+    public function approveApplication() {
+        if (!$this->isAdmin()) {
+            header('Location: ' . BASE_URL . 'index.php?action=login');
+            exit;
+        }
+
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if ($id && $this->applicationModel->updateStatus($id, 'approved')) {
+            header("Location: " . BASE_URL . "index.php?action=admin");
+            exit();
+        } else {
+            echo "Erreur lors de l'approbation de la candidature.";
+        }
+    }
+
+    // Reject an application
+    public function rejectApplication() {
+        if (!$this->isAdmin()) {
+            header('Location: ' . BASE_URL . 'index.php?action=login');
+            exit;
+        }
+
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if ($id && $this->applicationModel->updateStatus($id, 'rejected')) {
+            header("Location: " . BASE_URL . "index.php?action=admin");
+            exit();
+        } else {
+            echo "Erreur lors du rejet de la candidature.";
+        }
+    }
+
+    // Create a new club (admin only)
+    public function createClub() {
+        if (!$this->isAdmin()) {
+            header('Location: ' . BASE_URL . 'index.php?action=login');
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = $_POST['name'];
+            $identity = $_POST['identity'];
+            $creationDate = $_POST['creation_date'];
+            $socialMedia = $_POST['social_media'];
+
+            // TODO: Implement create club logic (e.g., save to clubs table)
+            echo "Club created: $name";
+        }
+    }
+
+    // Update an existing club (admin only)
+    public function updateClub() {
+        if (!$this->isAdmin()) {
+            header('Location: ' . BASE_URL . 'index.php?action=login');
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = $_POST['id'];
+            $name = $_POST['name'];
+            $identity = $_POST['identity'];
+            $creationDate = $_POST['creation_date'];
+            $socialMedia = $_POST['social_media'];
+
+            // TODO: Implement update club logic
+            echo "Club updated: $name";
+        }
+    }
+
+    // Delete a club (admin only)
+    public function deleteClub() {
+        if (!$this->isAdmin()) {
+            header('Location: ' . BASE_URL . 'index.php?action=login');
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = $_POST['id'];
+
+            // TODO: Implement delete club logic
+            echo "Club deleted: $id";
+        }
+    }
+
+    // Check if the current user is an admin
+    private function isAdmin() {
+        return isset($_SESSION['user_id']) && $this->userModel->isAdmin($_SESSION['user_id']);
+    }
+}
